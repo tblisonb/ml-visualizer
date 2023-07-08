@@ -4,8 +4,7 @@ import pandas as pd
 ###############################################################################################################################
 # class MlData()
 #
-#   Class representing Music League data, containing member functions for mapping vote and submission data to relevant
-#   inputs.
+#   Class representing Music League data, containing member functions for mapping vote and submission data to relevant inputs.
 
 class MlData:
 
@@ -20,7 +19,7 @@ class MlData:
     #   Opens <filename> for reading, parsing the csv data into a dictionary based on the following format...
     #
     #   +----------------------+-----------+-------------+-------------+-----+-------------+------------+
-    #   | Number of Submitters | 23        |             |             |     |             |            |
+    #   | Number of Submitters | <N>       |             |             |     |             |            |
     #   +----------------------+-----------+-------------+-------------+-----+-------------+------------+
     #   | Song                 | Submitter | <person1>   | <person2>   | ... | <personN>   | Total      |
     #   | <song1>              | <person1> | <points1,1> | <points1,2> | ... | <points1,N> | <total1>   |
