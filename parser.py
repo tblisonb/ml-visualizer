@@ -2,38 +2,32 @@ import pandas as pd
 
 
 ###############################################################################################################################
-# class MlData()
+# class MlParser()
 #
 #   Class representing Music League data, containing member functions for mapping vote and submission data to relevant inputs.
 
-class MlData:
+class MlParser:
 
     ### Member Functions ######################################################################################################
 
     def __init__(self):
-        self.csv_data = []
+        self.df = []
 
     ###########################################################################################################################
     # function parse_ml_csv_file(filename)
     #
     #   Opens <filename> for reading, parsing the csv data into a dictionary based on the following format...
     #
-    #   +----------------------+-----------+-------------+-------------+-----+-------------+------------+
-    #   | Number of Submitters | <N>       |             |             |     |             |            |
-    #   +----------------------+-----------+-------------+-------------+-----+-------------+------------+
-    #   | Song                 | Submitter | <person1>   | <person2>   | ... | <personN>   | Total      |
-    #   | <song1>              | <person1> | <points1,1> | <points1,2> | ... | <points1,N> | <total1>   |
-    #   | <song2>              | <person2> | <points2,1> | <points2,2> | ... | <points2,N> | <total2>   |
-    #   | ...                  | ...       | ...         | ...         | ... | ...         | ...        |
-    #   | <songN>              | <personN> | <pointsN,1> | <pointsN,2> | ... | <pointsN,N> | <totalN>   |
-    #   |                      | Total     | <totalFix>  | <totalFix>  | ... | <totalFix>  | <sumTotal> |
-    #   +----------------------+-----------+-------------+-------------+-----+-------------+------------+
+    #   +----------------------+-----------+-------------+-------------+-----+-------------+
+    #   | Song                 | Submitter | <person1>   | <person2>   | ... | <personN>   |
+    #   | <song1>              | <person1> | <points1,1> | <points1,2> | ... | <points1,N> |
+    #   | <song2>              | <person2> | <points2,1> | <points2,2> | ... | <points2,N> |
+    #   | ...                  | ...       | ...         | ...         | ... | ...         |
+    #   | <songN>              | <personN> | <pointsN,1> | <pointsN,2> | ... | <pointsN,N> |
+    #   +----------------------+-----------+-------------+-------------+-----+-------------+
     #
     #   Fields <pointsA,B> are the number of points that submitter B gave to submitter A's song. This should always be zero
-    #   when A == B. Each row ends in a total, being the number of points that row's song was awarded. Each column also ends in
-    #   a total; this is just for validating data entry as each total should add up to the net number of votes per person for
-    #   that round (total == upvotes - downvotes). There may be instances where all of the <totalFix> fields do not equal each
-    #   other if the point total per submitter was adjusted after the round started.
+    #   when A == B.
     #
     #   Arguments:
     #   - <filename> path to a csv file with the format as described here.
@@ -42,9 +36,9 @@ class MlData:
     #   - none
 
     def parse_ml_csv_file(self, filename):
-        self.csv_data = pd.read_csv(filename)
+        self.df = pd.read_csv(filename)
         print("Imported data from " + filename + "...")
-        print(self.csv_data)
+        print(self.df)
 
     ###########################################################################################################################
     # function get_songs()
@@ -52,7 +46,7 @@ class MlData:
     #   Gets a list of songs in the dataset.
 
     def get_songs(self):
-        return self.csv_data.iloc[1:-1, 0].tolist()
+        return self.df["Song"].tolist()
 
     ###########################################################################################################################
     # function get_submitters()
@@ -60,13 +54,49 @@ class MlData:
     #   Gets a list of submitters' names in the dataset.
 
     def get_submitters(self):
-        return self.csv_data.iloc[1:-1, 1].tolist()
+        return self.df["Submitter"].tolist()
 
     ###########################################################################################################################
-    # function get_votes_for_submitter(submitter_name)
+    # function get_song_for_submitter(submitter_name)
     #
-    #   Gets a list of vote counts for a given user; maps 1 to 1 at each index to the list returned by get_submitters().
+    #   Gets the song associated with <submitter_name>.
 
-    def get_votes_for_submitter(self, submitter_name):
-        submitter_row = self.csv_data.loc[self.csv_data.iloc[:, 1] == submitter_name]
-        return submitter_row.iloc[:, 2:-1].iloc[0].tolist()
+    def get_song_for_submitter(self, submitter_name):
+        submitter_row = self.df.loc[self.df["Submitter"] == submitter_name]
+        if (len(submitter_row["Song"]) < 1):
+            print("No song found for submitter \"" + submitter_name + "\"")
+            return None
+        return submitter_row["Song"].iloc[0]
+
+    ###########################################################################################################################
+    # function get_submitter_for_song(song_name)
+    #
+    #   Gets the submitter associated with <song_name>.
+
+    def get_submitter_for_song(self, song_name):
+        song_row = self.df.loc[self.df["Song"] == song_name]
+        if (len(song_row["Submitter"]) < 1):
+            print("No submitter found for song \"" + song_name + "\"")
+            return None
+        return song_row["Submitter"].iloc[0]
+
+    ###########################################################################################################################
+    # function get_submitter_votes_for_song(song_name)
+    #
+    #   Gets a dictionary of vote counts for a given song; key = submitter, value = points.
+
+    def get_submitter_votes_for_song(self, song_name):
+        song_row = self.df.loc[self.df["Song"] == song_name]
+        #   The first two columns are not point data so ignore them.
+        return song_row.iloc[0, 2:].to_dict()
+
+    ###########################################################################################################################
+    # function get_song_votes_for_submitter(submitter_name)
+    #
+    #   Gets a dictionary of vote counts for a given submitter; key = song, value = points.
+
+    def get_song_votes_for_submitter(self, submitter_name):
+        submitter_col = self.df[submitter_name]
+        #   Create a dictionary of two different lists; being the songs and the points awarded by <submitter_name> (these 
+        # should always line up 1:1 assuming the data is square).
+        return dict(zip(self.get_songs(), submitter_col))
