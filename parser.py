@@ -39,82 +39,82 @@ class MlParser:
         self.df = pd.read_csv(filename)
 
     ###########################################################################################################################
-    # function get_df()
+    # function get_df(round_number = None)
     #
     #   Gets the internal Dataframe.
 
-    def get_df(self):
-        return self.df
+    def get_df(self, round_number = None):
+        if round_number is None:
+            return self.df
+        else:
+            return self.df.loc[self.df["Round"] == round_number]
 
     ###########################################################################################################################
-    # function get_df_for_round(round_number)
-    #
-    #   Gets the internal Dataframe for a give round.
-
-    def get_df_for_round(self, round_number):
-        return self.df.loc[self.df["Round"] == round_number]
-
-    ###########################################################################################################################
-    # function get_rounds()
+    # function get_rounds(submitter_name = None)
     #
     #   Gets a list of rounds in the data set.
 
-    def get_rounds(self):
-        seen = set()
-        seen_add = seen.add
-        return [x for x in self.df["Round"].tolist() if not (x in seen or seen_add(x))]
+    def get_rounds(self, submitter_name = None):
+        if submitter_name is None:
+            seen = set()
+            seen_add = seen.add
+            return [x for x in self.df["Round"].tolist() if not (x in seen or seen_add(x))]
+        else:
+            return self.df.loc[self.df["Submitter"] == submitter_name]["Round"].tolist()
 
     ###########################################################################################################################
-    # function get_songs(round_number)
+    # function get_songs(round_number = None, submitter_name = None)
     #
     #   Gets a list of songs for a given round <round_number> in the dataset.
 
-    def get_songs(self, round_number):
-        if (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
+    def get_songs(self, round_number = None, submitter_name = None):
+        #   Error checking for arguments.
+        if round_number is not None and (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
             print("Round number \"" + str(round_number) + "\" does not exist.")
             return None
-        return self.df["Song"].loc[self.df["Round"] == round_number].tolist()
+        if submitter_name is not None and (len(self.df.loc[self.df["Submitter"] == submitter_name]) <= 0):
+            print("Submitter \"" + str(submitter_name) + "\" does not exist.")
+            return None
+        #   Cases based on which arguments were provided.
+        if round_number is None and submitter_name is None:
+            return self.df["Song"].tolist()
+        elif round_number is not None and submitter_name is None:
+            return self.df["Song"].loc[self.df["Round"] == round_number].tolist()
+        elif round_number is None and submitter_name is not None:
+            return self.df.loc[self.df["Submitter"] == submitter_name]["Song"].tolist()
+        else:
+            submitter_row = self.df.loc[self.df["Submitter"] == submitter_name].loc[self.df["Round"] == round_number]
+            if (len(submitter_row["Song"]) < 1):
+                print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
+                return None
+            return submitter_row["Song"].iloc[0]
 
     ###########################################################################################################################
-    # function get_submitters(round_number)
+    # function get_submitters(round_number = None, song_name = None)
     #
     #   Gets a list of submitters' names for a given round <round_number> in the dataset.
 
-    def get_submitters(self, round_number):
-        if (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
+    def get_submitters(self, round_number = None, song_name = None):
+        #   Error checking for arguments.
+        if round_number is not None and (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
             print("Round number \"" + str(round_number) + "\" does not exist.")
             return None
-        return self.df["Submitter"].loc[self.df["Round"] == round_number].tolist()
-
-    ###########################################################################################################################
-    # function get_song_for_submitter(round_number, submitter_name)
-    #
-    #   Gets the song associated with <submitter_name> for a given round <round_number>.
-
-    def get_song_for_submitter(self, round_number, submitter_name):
-        if (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
-            print("Round number \"" + str(round_number) + "\" does not exist.")
+        if song_name is not None and (len(self.df.loc[self.df["Song"] == song_name]) <= 0):
+            print("Song \"" + str(song_name) + "\" does not exist.")
             return None
-        submitter_row = self.df.loc[self.df["Submitter"] == submitter_name].loc[self.df["Round"] == round_number]
-        if (len(submitter_row["Song"]) < 1):
-            print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
-            return None
-        return submitter_row["Song"].iloc[0]
-
-    ###########################################################################################################################
-    # function get_submitter_for_song(round_number, song_name)
-    #
-    #   Gets the submitter associated with <song_name> for a given round <round_number>.
-
-    def get_submitter_for_song(self, round_number, song_name):
-        if (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
-            print("Round number \"" + str(round_number) + "\" does not exist.")
-            return None
-        song_row = self.df.loc[self.df["Song"] == song_name].loc[self.df["Round"] == round_number]
-        if (len(song_row["Submitter"]) < 1):
-            print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
-            return None
-        return song_row["Submitter"].iloc[0]
+        #   Cases based on which arguments were provided.
+        if round_number is None and song_name is None:
+            return self.df.columns.values[3:].tolist()
+        elif round_number is not None and song_name is None:
+            return self.df["Submitter"].loc[self.df["Round"] == round_number].tolist()
+        elif round_number is None and song_name is not None:
+            return self.df.loc[self.df["Song"] == song_name]["Submitter"].tolist()
+        else:
+            song_row = self.df.loc[self.df["Song"] == song_name].loc[self.df["Round"] == round_number]
+            if (len(song_row["Submitter"]) < 1):
+                print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
+                return None
+            return song_row["Submitter"].iloc[0]
 
     ###########################################################################################################################
     # function get_submitter_votes_for_song(round_number, song_name)
@@ -181,3 +181,29 @@ class MlParser:
             return None
         submitter_col = self.df[submitter_name].loc[self.df["Round"] == round_number]
         return sum(map(abs, submitter_col))
+
+    ###########################################################################################################################
+    # function get_total_points_for_submitter(submitter_name)
+    #
+    #   Gets the total number of points awarded to <submitter_name> for all rounds.
+
+    def get_total_points_for_submitter(self, submitter_name):
+        rounds = self.get_rounds(submitter_name=submitter_name)
+        total = 0
+        for round in rounds:
+            song = self.get_songs(submitter_name=submitter_name, round_number=round)
+            assert(isinstance(song, str))
+            total += self.get_net_total_points_for_song(round, song)
+        return total
+
+    ###########################################################################################################################
+    # function get_total_points_awarded()
+    #
+    #   Gets a dataframe containing the total number of points awarded to each submitter by each submitter across all rounds.
+
+    def get_total_points_awarded(self):
+        #   Exclude first two columns which aren't relevant for this function.
+        point_subset_df = self.df.iloc[:, 2:]
+        all_submitters = self.get_submitters()
+        agg_functions = dict(zip(all_submitters, ["sum"] * len(all_submitters)))
+        return self.df.groupby(self.df["Submitter"]).aggregate(agg_functions)
