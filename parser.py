@@ -47,7 +47,7 @@ class MlParser:
         if round_number is None:
             return self.df
         else:
-            return self.df.loc[self.df["Round"] == round_number]
+            return self.df.loc[self.df["Round"] == round_number].iloc[:,1:]
 
     ###########################################################################################################################
     # function get_rounds(submitter_name = None)
@@ -197,13 +197,36 @@ class MlParser:
         return total
 
     ###########################################################################################################################
-    # function get_total_points_awarded()
+    # function get_cumulative_points_awarded(round_number=None)
     #
-    #   Gets a dataframe containing the total number of points awarded to each submitter by each submitter across all rounds.
+    #   Gets a dataframe containing the total number of points awarded to each submitter by each submitter across all rounds up
+    #   to <round_number> (all rounds in dataset if <round_number> is not specified).
 
-    def get_total_points_awarded(self):
+    def get_cumulative_points_awarded(self, round_number=None):
+        if round_number is not None and (len(self.df.loc[self.df["Round"] == round_number]) <= 0):
+            print("Round number \"" + str(round_number) + "\" does not exist.")
+            return None
         #   Exclude first two columns which aren't relevant for this function.
-        point_subset_df = self.df.iloc[:, 2:]
+        if round_number is not None:
+            round_subset_df = self.df.loc[self.df["Round"] <= round_number]
+        else:
+            round_subset_df = self.df
         all_submitters = self.get_submitters()
         agg_functions = dict(zip(all_submitters, ["sum"] * len(all_submitters)))
-        return self.df.groupby(self.df["Submitter"]).aggregate(agg_functions)
+        return round_subset_df.groupby(round_subset_df["Submitter"], as_index=False).aggregate(agg_functions)
+
+    ###########################################################################################################################
+    # function get_bf_format()
+    #
+    #   Gets a specific string format for a "bar fight" visualization; data includes cumulative point totals per round for each
+    #   submitter.
+
+    def get_bf_format(self):
+        result = "[\n"
+        for round_number in self.get_rounds():
+            round_df = self.get_cumulative_points_awarded(round_number=round_number)
+            for person in self.get_submitters(round_number=round_number):
+                points = str(sum(round_df.loc[round_df["Submitter"] == person].iloc[0, 1:].tolist()))
+                result += "    {\"order\": " + str(round_number) + ", \"name\": \"" + person + "\", \"value\": " + points + "},\n"
+        result += "]"
+        return result
