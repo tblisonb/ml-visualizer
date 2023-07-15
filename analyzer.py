@@ -1,3 +1,6 @@
+from collections import Counter
+
+
 class MlAnalyzer:
 
     def __init__(self, parser):
@@ -6,7 +9,7 @@ class MlAnalyzer:
     def calculate_similar_submitters_for_round(self, round_number, submitter_name):
         #   If <submitter_name> did not vote in the round, there's nothing to do.
         if (self.parser.get_absolute_total_points_for_submitter(round_number, submitter_name) == 0):
-            print("Submitter \"" + submitter_name + "\" did not vote in round \"" + str(round_number) + "\".")
+            # print("Submitter \"" + submitter_name + "\" did not vote in round \"" + str(round_number) + "\".")
             return
         submitters = self.parser.get_submitters(round_number)
         submitter_votes = self.parser.get_song_votes_for_submitter(round_number, submitter_name)
@@ -94,3 +97,42 @@ class MlAnalyzer:
                     min_round_num = round_num
         print("Highest voting overlap for a single round was in round number " + str(max_round_num) + ": " + max_person + " with " + "{0:.0%}".format(max_value) + " overlap.")
         print("Lowest voting overlap for a single round was in round number " + str(min_round_num) + ": " + min_person + " with " + "{0:.0%}".format(min_value) + " overlap.")
+
+    def find_biggest_oddball(self, round_number):
+        submitters = self.parser.get_submitters(round_number = round_number)
+        oddball_list = []
+        for person in submitters:
+            similar_dict = self.calculate_similar_submitters_for_round(round_number, person)
+            if similar_dict is None:
+                continue
+            similar_list = []
+            for person in similar_dict:
+                similar_list.append((person, similar_dict[person]))
+            sorted_list = sorted(similar_list, key=lambda tup: tup[1])
+            oddball_list.extend(sorted_list[:3])
+        oddball_dict = Counter(person[0] for person in oddball_list)
+        #   Trim down the list to a max of three people
+        final_list = []
+        for oddball in oddball_dict:
+            if oddball_dict[oddball] >= (len(submitters) / 2):
+                final_list.append((oddball, oddball_dict[oddball] / len(submitters)))
+        return sorted(final_list, key=lambda tup: tup[1])[::-1]
+
+    def find_biggest_dumper(self, round_number):
+        rounds = self.parser.get_rounds()
+        #   list of tuples taking the form (submitter_name, song_name, voter_name, num_points)
+        dump_list = []
+        cum_points_df = self.parser.get_df(round_number=round_number)
+        submitters = self.parser.get_submitters(round_number=round_number)
+        dumpers_dict = dict(zip(submitters, [("", "", 0)] * len(submitters)))
+        for person in submitters:
+            value = max(cum_points_df[person])
+            idx = cum_points_df[person].idxmax()
+            if value > dumpers_dict[person][2]:
+                submitter = cum_points_df.loc[idx, "Submitter"]
+                song = self.parser.get_songs(round_number=round_number, submitter_name=submitter)
+                assert song is not None
+                dumpers_dict[person] = (submitter, song, value)
+        for person in submitters:
+            dump_list.append((dumpers_dict[person][0], dumpers_dict[person][1], person, dumpers_dict[person][2]))
+        return sorted(dump_list, key=lambda tup: tup[3])[len(dump_list) - 1]

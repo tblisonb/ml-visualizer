@@ -85,7 +85,7 @@ class MlParser:
         else:
             submitter_row = self.df.loc[self.df["Submitter"] == submitter_name].loc[self.df["Round"] == round_number]
             if (len(submitter_row["Song"]) < 1):
-                print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
+                # print("No song found for submitter \"" + submitter_name + "\" in round \"" + str(round_number) + "\".")
                 return None
             return submitter_row["Song"].iloc[0]
 
@@ -112,7 +112,7 @@ class MlParser:
         else:
             song_row = self.df.loc[self.df["Song"] == song_name].loc[self.df["Round"] == round_number]
             if (len(song_row["Submitter"]) < 1):
-                print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
+                # print("No submitter found for song \"" + song_name + "\" in round \"" + str(round_number) + "\".")
                 return None
             return song_row["Submitter"].iloc[0]
 
